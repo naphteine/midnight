@@ -1,0 +1,79 @@
+Midnight OS ++
+Start date: 2015-12-26 01:26+0200 (EET)
+Scroll to end of file for details.
+
+:: Development log
+2015-12-26 #1
+	01:26 * Project created as clone of "www.wiki.osdev.org/Bare_Bones"; v0.0.0.0,
+	XX:XX + Fake VGA driver; v0.1.0.0,
+	XX:XX + Basic terminal; v0.2.0.0,
+	XX:XX + "strlen" function; v0.3.0.0.
+
+2016-02-18 #2
+	XX:XX * Deleted unnecesseary boot.s file which is because I use NASM & boot.asm,
+	XX:XX - Fixed "__i386___" and "site_t" at kernel.c; v0.3.0.1,
+	XX:XX * Created grub.cfg and isodir folder,
+	XX:XX * Compiled source files, builded project and created midnight.iso.
+
+2016-02-27 #3
+	XX:XX - Fixed /grub.cfg "mutiboot"; v0.3.0.2,
+	XX:XX - Changed terminal background from COLOR_DARK_GRAY to COLOR_BLACK; v0.3.0.3,
+	XX:XX + Added line support for terminal; v0.3.1.0,
+	XX:XX * Created shell scripts for autobuilding,
+	XX:XX * Tried scrolling support for terminal but failed.
+
+2016-03-15 #4
+	XX:XX * Upgraded log to new format which contains 4 parts: header, log, about, extra with 3 seperators,
+	XX:XX * Uploaded compiler to project base as backup and updated scripts.
+
+2016-03-16 #5
+	XX:XX & Added user input feature for terminal; v0.4.0.0:
+		XX:XX * Created a loop with simple while and boolean; v0.4a0,
+		XX:XX + Created basic keyboard support (buggy, not ley you write same letter twice); v0.4a1.
+
+	XX:XX + Added backspace support for user inputs; v0.4.1.0,
+	XX:XX + Added user command feature with loop escape via TAB key; v0.5.0.0,
+	XX:XX + Added / key help output to user commands; v0.5.1.0,
+	XX:XX + Added scrolling support for terminal; v0.5.2.0.
+
+2016-03-23 #6
+	XX:XX - Rewrited scancodes on my own for licensing (i did try-and-fail-and-learn); v0.5.2.1,
+	XX:XX + Added keyboard released output to get_scancode function with helps from internet; v0.5.3.0,
+	XX:XX - Changed some texts like opening text and ending text; v0.5.3.1,
+	XX:XX - Changed not-two-same-letter method to updatelock method for fixing bloating letters; v0.5.3.2,
+	XX:XX - Changed if-based input controller to switch-based one; v0.5.3.3,
+	XX:XX - Changed loop exit key from TAB to ESC; v0.5.3.4.
+
+2016-04-11 #7
+	06:18 * Updated log format and version data for making this project fit to my standards,
+	06:19 * From now on I will keep log inside project folder.
+
+:: Details
+What is it: A *n*x-like system for my machines in order to learning & control over machine.
+Purpose: Personal
+Things to do: split kernel.c, slow writing | own fs, apps(text, code, compiler, browser, de(s), detheme(g)), bootloader.
+
+How to version/log:
+	Version: My standard versioning version 1.
+	Log: Daily. create/add/change/fix/upgrade/update/try/etc content (comment): details: vVersion.
+	Backups: Backups for daily work & imp. versions. date_time_version for naming. Latest at current.
+
+Shell scripts for automatic building:
+	build.sh: Runs buildkernel.sh, buildlinker.sh, buildgrub.sh.
+	buildkernel.sh: Builds kernel.c with GCC compiler and outputs kernel.o.
+	buildlinker.sh: Builds .bin from kernel.o, boot.o and linker.ld.
+	buildgrub.sh: Copies .bin to grub, makes .iso and runs OS on QEMU (as iso).
+
+How to compile manually:
+	Boot: nasm -felf32 boot.asm -o boot.o
+	Kernel: i686-elf-gcc -c kernel.c -o kernel.o -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+	Linker: i686-elf-gcc -T linker.ld -o myos.bin -ffreestanding -O2 -nostdlib boot.o kernel.o -lgcc
+
+How to build manually:
+	First: Set grub.cfg, create isodir/boot/
+	If change made: grub.cfg to isodir/grub/grub.cfg
+	Always: myos.bin to isodir/boot, grub-mkrescue -o myos.iso isodir
+
+How to run manually:
+	If you want to run .iso: qemu-system-i386 -cdrom myos.iso
+	If you want to run .bin: qemu-system-i386 -kernel myos.bin

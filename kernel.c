@@ -1,3 +1,4 @@
+// Midnight OS --
 #if !defined(_cplusplus)
 	#include <stdbool.h>
 #endif
@@ -13,7 +14,7 @@
 	#error "You're doing wrong. You need to use ix86-elf compiler."
 #endif
 
-/* Fake VGA driver */
+/* fake VGA driver */
 enum vga_color {
 	COLOR_BLACK = 0,
 	COLOR_BLUE = 1,
@@ -56,7 +57,7 @@ size_t strlen(const char* str)
 	return ret;
 }
 
-/* Terminal */
+/* terminal */
 static const size_t VGA_WIDTH = 80;
 static const size_t VGA_HEIGHT = 25;
 
@@ -111,6 +112,7 @@ void terminal_putchar(char c)
 
 	if(++terminal_column == VGA_WIDTH)
 	{
+		terminal_row++;
 		terminal_column = 0;
 	}
 
@@ -146,44 +148,18 @@ void terminal_writestring(const char* data)
 }
 
 /* Input/output */
-/* scanCodes from http://www.osdever.net/bkerndev/Docs/keyboard.htm */
+#define CHAR_NULL	0
+#define CHAR_UNK	0
+#define CHAR_REL	9619691
+#define	CHAR_ESC	27
+#define CHAR_CTRL	0
+#define CHAR_SHIFT	0
+
 unsigned char scanCodes[128] = {
-	0,  27, '1', '2', '3', '4', '5', '6', '7', '8',	/* 9 */
-	'9', '0', '-', '=', '\b',	/* Backspace */
-	'\t',			/* Tab */
-	'q', 'w', 'e', 'r',	/* 19 */
-	't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',	/* Enter key */
-	0,			/* 29   - Control */
-	'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';',	/* 39 */
-	'\'', '`',   0,		/* Left shift */
-	'\\', 'z', 'x', 'c', 'v', 'b', 'n',			/* 49 */
-	'm', ',', '.', '/',   0,				/* Right shift */
-	'*',
-	0,	/* Alt */
-	' ',/* Space bar */
-    0,	/* Caps lock */
-    0,	/* 59 - F1 key ... > */
-    0,   0,   0,   0,   0,   0,   0,   0,
-    0,	/* < ... F10 */
-    0,	/* 69 - Num lock*/
-    0,	/* Scroll Lock */
-    0,	/* Home key */
-    0,	/* Up Arrow */
-    0,	/* Page Up */
-  '-',
-    0,	/* Left Arrow */
-    0,
-    0,	/* Right Arrow */
-  '+',
-    0,	/* 79 - End key*/
-    0,	/* Down Arrow */
-    0,	/* Page Down */
-    0,	/* Insert Key */
-    0,	/* Delete Key */
-    0,   0,   0,
-    0,	/* F11 Key */
-    0,	/* F12 Key */
-    0,	/* All other keys are undefined */
+	CHAR_NULL, CHAR_ESC, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
+	'\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
+	CHAR_CTRL, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', ' ', CHAR_SHIFT, '\\',
+	'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', CHAR_NULL, CHAR_NULL, CHAR_NULL, ' '
 };
 
 static inline void outb(uint16_t port, uint8_t val)
@@ -198,16 +174,20 @@ static inline uint8_t inb(uint16_t port)
     return ret;
 }
 
-char get_scancode()
+size_t get_scancode()
 {
-	char c = 0;
+	size_t c = 0;
 
 	do {
 		if(inb(0x60) != c)
 		{
 			c = inb(0x60);
 
-			if(c > 0)
+			if((c & 128) == 128)
+			{
+				return CHAR_REL;
+			}
+			else
 			{
 				return c;
 			}
@@ -220,7 +200,7 @@ char get_character()
 	return scanCodes[get_scancode()];
 }
 
-/* OS */
+/* os */
 #if defined(__cplusplus)
 	extern "C"
 #endif
@@ -230,40 +210,55 @@ void kernel_main()
 	terminal_initialize();
 	terminal_writestring("Welcome to Midnight..\n");
 	terminal_setcolor(make_color(COLOR_LIGHT_GREY, COLOR_BLACK));
-	terminal_writestring("TAB is exit, ENTER is line, others are input. Get help with /\n");
+	terminal_writestring("Command line is now alive. Get help with / command.\n");
 
 	bool looping = true;
-	char lastchar, enteredchar = '\n';
+	bool updatelock = false;
+	char lastentry = CHAR_NULL;
+	char lastinput = CHAR_NULL;
 
 	while(looping)
 	{
-		lastchar = enteredchar;
-		enteredchar = get_character();
-
-		if(enteredchar != lastchar)
+		if(get_scancode() == CHAR_REL)
 		{
-			// Basic things like exit, backspace and write.
-			if(enteredchar == '\t')
-			{
-				looping = false;
-			}
-			else if(enteredchar == '\b')
-			{
-				terminal_putentryat(' ', terminal_color, terminal_column - 1, terminal_row);
-				terminal_column = terminal_column - 1;
-			}
-			else
-			{
-				terminal_putchar(enteredchar);
-			}
+			updatelock = false;
+		}
 
-			// Commands
-			if(lastchar == '/')
+		lastinput = get_character();
+		
+		if(updatelock == false && lastinput != CHAR_NULL)
+		{
+			updatelock = true;
+
+			switch(lastinput)
 			{
-				terminal_writestring("\nHELP: LOL NO\n");
+				case '\b':
+					terminal_putentryat(' ', terminal_color, terminal_column - 1, terminal_row);
+					terminal_column = terminal_column - 1;
+					break;
+
+				case '\n':
+					if(lastentry == '/')
+					{
+						terminal_writestring("\nA very early stage. This is for test.");
+					}
+
+					terminal_row++;
+					terminal_column = 1;
+					lastentry = CHAR_NULL;
+					break;
+
+				case CHAR_ESC:
+					looping = false;
+					break;
+
+				default:
+					terminal_putchar(lastinput);
+					lastentry = lastinput;
+					break;
 			}
 		}
 	}
 
-	terminal_writestring("\nExit music...");
+	terminal_writestring("\nExit music. . .\nMidnight exited its loop, you should reboot or shutdown manually.");
 }
