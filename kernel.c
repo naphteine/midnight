@@ -9,7 +9,7 @@
 	#error "You're doing wrong. You need to use cross-compiler."
 #endif
 
-#if !defined(__i386___)
+#if !defined(__i386__)
 	#error "You're doing wrong. You need to compile with ix86-elf compiler."
 #endif
 
@@ -71,7 +71,7 @@ void terminal_initialize()
 
 	for(size_t y = 0; y < VGA_HEIGHT; y++)
 	{
-		for(site_t x = 0; x < VGA_WIDTH; x++)
+		for(size_t x = 0; x < VGA_WIDTH; x++)
 		{
 			const size_t index = y * VGA_WIDTH + x;
 			terminal_buffer[index] = make_vgaentry(' ', terminal_color);
@@ -119,6 +119,6 @@ void terminal_writestring(const char* data)
 
 void kernel_main()
 {
-	terminal_initialize;
+	terminal_initialize();
 	terminal_writestring("Welcome to Midnight...\n");
 }
