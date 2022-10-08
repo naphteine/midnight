@@ -66,7 +66,7 @@ void terminal_initialize()
 {
 	terminal_row = 0;
 	terminal_column = 0;
-	terminal_color = make_color(COLOR_LIGHT_BLUE, COLOR_DARK_GREY);
+	terminal_color = make_color(COLOR_LIGHT_BLUE, COLOR_BLACK);
 	terminal_buffer = (uint16_t*) 0xB8000;
 
 	for(size_t y = 0; y < VGA_HEIGHT; y++)
@@ -84,6 +84,17 @@ void terminal_setcolor(uint8_t color)
 	terminal_color = color;
 }
 
+void terminal_scroll()
+{
+	for(size_t y = 0; y < VGA_HEIGHT - 1; y++)
+	{
+		for(size_t x = 0; x < VGA_WIDTH; x++)
+		{
+			terminal_buffer[y * VGA_WIDTH + x] = terminal_buffer[(y + 1) * VGA_WIDTH + x];
+		}
+	}
+}
+
 void terminal_putentryat(char c, uint8_t color, size_t x, size_t y)
 {
 	const size_t index = y * VGA_WIDTH + x;
@@ -92,7 +103,15 @@ void terminal_putentryat(char c, uint8_t color, size_t x, size_t y)
 
 void terminal_putchar(char c)
 {
-	terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
+	if(c == '\n')
+	{
+		terminal_row++;
+		terminal_column = 1;
+	}
+	else
+	{
+		terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
+	}
 
 	if(++terminal_column == VGA_WIDTH)
 	{
@@ -100,7 +119,7 @@ void terminal_putchar(char c)
 
 		if(++terminal_row == VGA_HEIGHT)
 		{
-			terminal_row = 0;
+			terminal_row = VGA_HEIGHT - 2;
 		}
 	}
 }
@@ -120,5 +139,12 @@ void terminal_writestring(const char* data)
 void kernel_main()
 {
 	terminal_initialize();
-	terminal_writestring("Welcome to Midnight...\n");
+	terminal_writestring("Welcome to Midnight..\n");
+
+	terminal_setcolor(make_color(COLOR_LIGHT_GREY, COLOR_BLACK));
+
+	for(size_t i = 0; i < 20; i++)
+	{
+		terminal_writestring("Testing page scroll! Testing it right now! WAIT! Testing it!\n");
+	}
 }
